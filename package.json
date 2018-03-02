@@ -1,5 +1,5 @@
 {
-  "name": "ibus",
+  "name": "pikey-ibus",
   "version": "0.0.9",
   "dependencies": {
     "serialport": "*",
