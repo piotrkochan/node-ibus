@@ -14,7 +14,7 @@ var wstream = fs.createWriteStream('raw/' + df + '_message.bin');
 // A601HPGR - car
 
 var serialPort = new serialport.SerialPort("/dev/cu.usbserial-A601HPGR", {
-    baudrate: 9600,
+    baudRate: 9600,
     parity: 'even',
     stopbits: 1,
     databits: 8, 

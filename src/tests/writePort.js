@@ -1,7 +1,7 @@
 var SerialPort = require("serialport").SerialPort;
 
 var sp = new SerialPort("/dev/ttys004", {
-  baudrate: 38400
+  baudRate: 38400
 });
 
 sp.on('open',function() {

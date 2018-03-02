@@ -10,7 +10,7 @@
 var serialport = require("serialport");
 
 var serialPort = new serialport.SerialPort("/dev/ttys003", {
-    baudrate: 9600,
+    baudRate: 9600,
     parity: 'even',
     stopbits: 1,
     //databits: 8, 
