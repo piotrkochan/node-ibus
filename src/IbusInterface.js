@@ -9,7 +9,7 @@ var EventEmitter = require('events').EventEmitter;
 var IbusProtocol = require('./IbusProtocol.js');
 var IbusDevices = require('./IbusDevices.js');
 
-var IbusInterface = function(devicePath) {
+var IbusInterface = function (devicePath) {
 
     // self reference
     var _self = this;
@@ -27,6 +27,7 @@ var IbusInterface = function(devicePath) {
     var device = devicePath;
     var parser;
     var lastActivityTime = process.hrtime();
+    var portListener;
     var queue = [];
 
 
@@ -41,19 +42,26 @@ var IbusInterface = function(devicePath) {
             parser: SerialPort.parsers.raw
         });
 
-        serialPort.open(function(error) {
+        serialPort.open(function (error) {
             if (error) {
                 log.error('[IbusInterface] Failed to open: ' + error);
+                _self.emit('error', 'could not open serial connection');
             } else {
+                portListener = setInterval(function () {
+                    if (false === serialPort.isOpen) {
+                        _self.emit('error', 'serialPort is closed');
+                    }
+                }, 1000);
+
                 log.info('[IbusInterface] Port Open [' + device + ']');
 
-                serialPort.on('data', function(data) {
+                serialPort.on('data', function (data) {
                     //log.debug('[IbusInterface] Data on port: ', data);
 
                     lastActivityTime = process.hrtime();
                 });
 
-                serialPort.on('error', function(err) {
+                serialPort.on('error', function (err) {
                     log.error("[IbusInterface] Error", err);
                     shutdown(startup);
                 });
@@ -76,7 +84,7 @@ var IbusInterface = function(devicePath) {
     };
 
 
-    function watchForEmptyBus(workerFn) {        
+    function watchForEmptyBus(workerFn) {
         if (getHrDiffTime(lastActivityTime) >= 20) {
             workerFn(function success() {
                 // operation is ready, resume looking for an empty bus
@@ -100,13 +108,14 @@ var IbusInterface = function(devicePath) {
 
         log.debug(clc.blue('[IbusInterface] Write queue length: '), queue.length);
 
-        serialPort.write(dataBuf, function(error, resp) {
+        serialPort.write(dataBuf, function (error, resp) {
             if (error) {
                 log.error('[IbusInterface] Failed to write: ' + error);
+                _self.emit('error', 'failed to write:' + error);
             } else {
                 log.info('[IbusInterface] ', clc.white('Wrote to Device: '), dataBuf, resp);
 
-                serialPort.drain(function(error) {
+                serialPort.drain(function (error) {
                     log.debug(clc.white('Data drained'));
 
                     // this counts as an activity, so mark it
@@ -120,7 +129,8 @@ var IbusInterface = function(devicePath) {
     }
 
     function closeIBUS(callb) {
-        serialPort.close(function(error) {
+        serialPort.close(function (error) {
+            clearInterval(portListener);
             if (error) {
                 log.error('[IbusInterface] Error closing port: ', error);
                 callb();
@@ -152,7 +162,6 @@ var IbusInterface = function(devicePath) {
     }
 
     function sendMessage(msg) {
-
         var dataBuf = IbusProtocol.createIbusMessage(msg);
         log.debug('[IbusInterface] Send message: ', dataBuf);
 
